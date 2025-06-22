@@ -1,4 +1,4 @@
-The 'local_movement' folder contains a ROS package to move the vehicle around in short and direct movements. Copy the folder to the ROS Workspace on the vehicle NUC computer and compile.
+The 'local_movement' folder contains a ROS package to move the vehicle around in short and direct movements. Copy the folder to the 'src' folder in the ROS Workspace on the vehicle NUC computer and compile.
 ```
 colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 ```
