@@ -1,0 +1,44 @@
+name: domain_bridge
+from_domain: 0
+to_domain: 1
+topics:
+  free_paths:
+    type: sensor_msgs/msg/PointCloud2
+  viz_path_topic:
+    type: visualization_msgs/msg/Marker
+  explored_areas:
+    type: sensor_msgs/msg/PointCloud2
+  registered_scan:
+    type: sensor_msgs/msg/PointCloud2
+  terrain_map:
+    type: sensor_msgs/msg/PointCloud2
+  terrain_map_ext:
+    type: sensor_msgs/msg/PointCloud2
+  imu/data:
+    type: sensor_msgs/msg/Imu
+  state_estimation:
+    type: nav_msgs/msg/Odometry
+  aft_mapped_to_init_incremental:
+    type: nav_msgs/msg/Odometry
+  tf:
+    type: tf2_msgs/msg/TFMessage
+  tf_static:
+    type: tf2_msgs/msg/TFMessage
+  way_point:
+    type: geometry_msgs/msg/PointStamped
+    reversed: True
+  goal_point:
+    type: geometry_msgs/msg/PointStamped
+    reversed: True
+  joy:
+    type: sensor_msgs/msg/Joy
+    reversed: True
+  reset_visibility_graph:
+    type: std_msgs/msg/Empty
+    reversed: True
+  planning_attemptable:
+    type: std_msgs/msg/Bool
+    reversed: True
+  update_visibility_graph:
+    type: std_msgs/msg/Bool
+    reversed: True

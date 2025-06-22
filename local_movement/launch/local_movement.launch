@@ -1,0 +1,17 @@
+<launch>
+
+  <node pkg="local_movement" exec="localMovement" name="localMovement" output="screen" >
+    <param name="speed" value="0.3" />
+    <param name="yawRate" value="0.45" />
+    <param name="slowDis" value="0.1" />
+    <param name="slowAngle" value="0.2" />
+    <param name="stopDis" value="0.02" />
+    <param name="stopAngle" value="0.04" />
+    <param name="collisionStop" value="true" />
+    <param name="obstacleHeightThre" value="0.05" />
+    <param name="vehicleLX" value="0.45" />
+    <param name="vehicleLY" value="0.48" />
+    <param name="stopMargin" value="0.1" />
+  </node>
+
+</launch>

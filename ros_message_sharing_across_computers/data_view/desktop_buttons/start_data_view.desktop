@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=true
+TerminalOptions=bash
+Exec=bash -c "/home/all/data_view/data_view.sh"
+Icon=/home/all/start.png
+Name=Application
+Name[en_US]=start_data_view.desktop
