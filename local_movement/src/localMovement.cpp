@@ -6,12 +6,11 @@
 #include "rclcpp/rclcpp.hpp"
 
 #include "nav_msgs/msg/odometry.hpp"
-#include <geometry_msgs/msg/pose2_d.hpp>
+#include <geometry_msgs/msg/pose.hpp>
 #include "sensor_msgs/msg/point_cloud2.hpp"
 #include <sensor_msgs/msg/joy.hpp>
 #include <geometry_msgs/msg/point_stamped.hpp>
 
-#include "tf2/transform_datatypes.h"
 #include "tf2_ros/transform_broadcaster.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 
@@ -115,18 +114,22 @@ void odomHandler(const nav_msgs::msg::Odometry::ConstSharedPtr odomIn)
   vehicleZ = odomIn->pose.pose.position.z;
 }
 
-void moveHandler(const geometry_msgs::msg::Pose2D::ConstSharedPtr move)
+void moveHandler(const geometry_msgs::msg::Pose::ConstSharedPtr move)
 {
-  goalX = vehicleX + cos(vehicleYaw) * move->x - sin(vehicleYaw) * move->y;
-  goalY = vehicleY + sin(vehicleYaw) * move->x + cos(vehicleYaw) * move->y;
+  double roll, pitch, yaw;
+  geometry_msgs::msg::Quaternion geoQuat = move->orientation;
+  tf2::Matrix3x3(tf2::Quaternion(geoQuat.x, geoQuat.y, geoQuat.z, geoQuat.w)).getRPY(roll, pitch, yaw);
 
-  goalYaw = vehicleYaw + move->theta;
+  goalX = vehicleX + cos(vehicleYaw) * move->position.x - sin(vehicleYaw) * move->position.y;
+  goalY = vehicleY + sin(vehicleYaw) * move->position.x + cos(vehicleYaw) * move->position.y;
+
+  goalYaw = vehicleYaw + yaw;
   if (goalYaw > PI) goalYaw -= 2 * PI;
   else if (goalYaw < -PI) goalYaw += 2 * PI;
 
   moveState = 1;
 
-  RCLCPP_INFO(nh->get_logger(), "Local movement started, x %.2f, y %.2f, heading %.2f.", move->x, move->y, move->theta);
+  RCLCPP_INFO(nh->get_logger(), "Local movement started, x %.2f, y %.2f, heading %.2f.", move->position.x, move->position.y, yaw);
 }
 
 void joystickHandler(const sensor_msgs::msg::Joy::ConstSharedPtr joy)
@@ -225,7 +228,7 @@ int main(int argc, char** argv)
 
   auto subOdom = nh->create_subscription<nav_msgs::msg::Odometry>("/state_estimation", 5, odomHandler);
 
-  auto subMove = nh->create_subscription<geometry_msgs::msg::Pose2D> ("/local_movement", 5, moveHandler);
+  auto subMove = nh->create_subscription<geometry_msgs::msg::Pose> ("/local_movement", 5, moveHandler);
 
   auto subJoystick = nh->create_subscription<sensor_msgs::msg::Joy>("/joy", 5, joystickHandler);
 

@@ -15,10 +15,9 @@ find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(pcl_conversions REQUIRED)
-find_package(pcl_ros REQUIRED)
 
 add_executable(localMovement src/localMovement.cpp)
-ament_target_dependencies(localMovement rclcpp std_msgs sensor_msgs nav_msgs geometry_msgs tf2 tf2_ros tf2_geometry_msgs pcl_ros pcl_conversions)
+target_link_libraries(localMovement rclcpp::rclcpp std_msgs::std_msgs sensor_msgs::sensor_msgs nav_msgs::nav_msgs geometry_msgs::geometry_msgs tf2::tf2 tf2_ros::tf2_ros tf2_geometry_msgs::tf2_geometry_msgs pcl_conversions::pcl_conversions)
 
 install(TARGETS
   localMovement
