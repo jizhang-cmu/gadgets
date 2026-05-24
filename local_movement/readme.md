@@ -10,7 +10,16 @@ ros2 launch local_movement local_movement.launch
 
 In a third terminal, send a 'geometry_msgs::msg::Pose' typed message on '/local_movement' topic to move the vehicle around locally. The movement is defined in vehicle frame. Use 'collisionStop' in the launch file to turn on and off collision stopping. During the local movement, touching any button on the joystick controller stops the vehicle. Here, only translation around x, y and rotation around z are effective.
 ```
-ros2 topic pub --once /local_movement geometry_msgs/msg/Pose '{position: {x: 0.5 y: 0.1 z: 0.0} orientation: {x: 0.0 y: 0.0 z: 0.0 w: 1.0}}'
+ros2 topic pub --once /local_movement geometry_msgs/msg/Pose 
+'position:                                                                
+  x: 0.5
+  y: 0.1
+  z: 0.0
+orientation:
+  x: 0.0
+  y: 0.0
+  z: 0.0
+  w: 1.0'
 ```
 
 This node operates the vehicle in manual mode. Before the next waypoint following, the system needs to switch back to waypoint mode. Click the 'Resume Navigation to Goal' button in RVIZ, or hold the 'waypoint-mode' button on the controller and use the right joystick to set the speed. Alternatively, users can write code to send a 'ensor_msgs::msg::Joy' typed message on '/joy' topic for mode switch. Example code in C++ is below.
