@@ -8,7 +8,7 @@ In a terminal, launch the system on the vehicle NUC computer. In a second termin
 ros2 launch local_movement local_movement.launch
 ```
 
-In a third terminal, send a 'geometry_msgs::msg::Pose2D' typed message on '/local_movement' topic to move the vehicle around locally. The movement is defined in vehicle frame by default. Set 'globalRef = true' in the launch file to use global reference. Use 'collisionStop' in the launch file to turn on and off collision stopping. During the local movement, touching any button on the joystick controller stops the vehicle (note that this leaves the system in manual mode).
+In a third terminal, send a 'geometry_msgs::msg::Pose2D' typed message on '/local_movement' topic to move the vehicle around locally. The movement is defined in vehicle frame by default. Set 'globalRef = true' in the launch file to use global reference. Use 'collisionStop' in the launch file to turn on and off collision stopping. During the local movement, touching any button on the joystick controller stops the vehicle (note that this leaves the system in manual mode). Upon completion, the node sends a 'std_msgs/Bool' typed message on topic '/movement_complete' to indicate whether the local movement finishes at the goal or not.
 ```
 ros2 topic pub --once /local_movement geometry_msgs/msg/Pose2D '{x: 0.5, y: 0.1, theta: 0.2}'
 ```

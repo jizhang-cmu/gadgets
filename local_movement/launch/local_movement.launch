@@ -9,6 +9,9 @@
     <param name="stopAngle" value="0.04" />
     <param name="collisionStop" value="true" />
     <param name="obstacleHeightThre" value="0.05" />
+    <param name="minRelZ" value="-10.0" />
+    <param name="maxRelZ" value="10.0" />
+    <param name="collisionPointThre" value="20" />
     <param name="vehicleLX" value="0.45" />
     <param name="vehicleLY" value="0.48" />
     <param name="sensorOffsetX" value="0.0" />

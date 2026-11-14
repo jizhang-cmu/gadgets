@@ -34,6 +34,9 @@ double stopDis = 0.02;
 double stopAngle = 0.04;
 bool collisionStop = true;
 double obstacleHeightThre = 0.05;
+double minRelZ = -0.4;
+double maxRelZ = 0.3;
+int collisionPointThre = 20;
 double vehicleLX = 0.5;
 double vehicleLY = 0.5;
 double sensorOffsetX = 0;
@@ -63,6 +66,7 @@ int ccwStop = 0;
 rclcpp::Node::SharedPtr nh;
 shared_ptr<rclcpp::Publisher<sensor_msgs::msg::Joy>> pubJoystick;
 shared_ptr<rclcpp::Publisher<geometry_msgs::msg::PointStamped>> pubWaypoint;
+shared_ptr<rclcpp::Publisher<std_msgs::msg::Bool>> pubMoveComplete;
 
 void pubJoyMsg(float joyFwd, float joyLeft, float joyYaw, float mode)
 {
@@ -105,6 +109,24 @@ void pubWaypointMsg()
   pubWaypoint->publish(waypoint);
 }
 
+void pubMoveCompleteMsg()
+{
+  float deltaX = goalX - vehicleX;
+  float deltaY = goalY - vehicleY;
+  float deltaXY = sqrt(deltaX * deltaX + deltaY * deltaY);
+
+  float deltaYaw = goalYaw - vehicleYaw;
+  if (deltaYaw > PI) deltaYaw -= 2 * PI;
+  else if (deltaYaw < -PI) deltaYaw += 2 * PI;
+
+  std_msgs::msg::Bool moveComplete;
+  if (deltaXY > stopDis || fabs(deltaYaw) > stopAngle) moveComplete.data = false;
+  else moveComplete.data = true;
+  pubMoveComplete->publish(moveComplete);
+
+  RCLCPP_INFO(nh->get_logger(), "Local movement completed: %d.", moveComplete.data);
+}
+
 void odomHandler(const nav_msgs::msg::Odometry::ConstSharedPtr odomIn)
 {
   odomTime = rclcpp::Time(odomIn->header.stamp).seconds();
@@ -136,7 +158,7 @@ void moveHandler(const geometry_msgs::msg::Pose2D::ConstSharedPtr move)
 
   moveState = 1;
 
-  RCLCPP_INFO(nh->get_logger(), "Local movement started, x %.2f, y %.2f, heading %.2f.", move->x, move->y, move->theta);
+  //RCLCPP_INFO(nh->get_logger(), "Local movement started, x %.2f, y %.2f, heading %.2f.", move->x, move->y, move->theta);
 }
 
 void joystickHandler(const sensor_msgs::msg::Joy::ConstSharedPtr joy)
@@ -144,9 +166,8 @@ void joystickHandler(const sensor_msgs::msg::Joy::ConstSharedPtr joy)
   if (joy->header.frame_id != "local_movement" && moveState == 1) {
     pubWaypointMsg();
     pubJoyMsg(0, 0, 0, 1.0);
+    pubMoveCompleteMsg();
     moveState = 0;
-
-    RCLCPP_INFO(nh->get_logger(), "Local movement interrupted.");
   }
 }
 
@@ -170,9 +191,10 @@ void terrainCloudHandler(const sensor_msgs::msg::PointCloud2::ConstSharedPtr ter
 
       float disX = point.x - vehicleX;
       float disY = point.y - vehicleY;
+      float disZ = point.z - vehicleZ;
       float disXY = sqrt(disX * disX + disY * disY);
 
-      if (disXY > vehicleRLarge || terrainCloud->points[i].intensity < obstacleHeightThre) continue;
+      if (disXY > vehicleRLarge || terrainCloud->points[i].intensity < obstacleHeightThre || disZ < minRelZ || disZ > maxRelZ) continue;
 
       float disX2 = cos(vehicleYaw) * disX + sin(vehicleYaw) * disY;
       float disY2 = -sin(vehicleYaw) * disX + cos(vehicleYaw) * disY;
@@ -217,6 +239,9 @@ int main(int argc, char** argv)
   nh->declare_parameter<double>("stopAngle", stopAngle);
   nh->declare_parameter<bool>("collisionStop", collisionStop);
   nh->declare_parameter<double>("obstacleHeightThre", obstacleHeightThre);
+  nh->declare_parameter<double>("minRelZ", minRelZ);
+  nh->declare_parameter<double>("maxRelZ", maxRelZ);
+  nh->declare_parameter<int>("collisionPointThre", collisionPointThre);
   nh->declare_parameter<double>("vehicleLX", vehicleLX);
   nh->declare_parameter<double>("vehicleLY", vehicleLY);
   nh->declare_parameter<double>("sensorOffsetX", sensorOffsetX);
@@ -232,6 +257,9 @@ int main(int argc, char** argv)
   nh->get_parameter("stopAngle", stopAngle);
   nh->get_parameter("collisionStop", collisionStop);
   nh->get_parameter("obstacleHeightThre", obstacleHeightThre);
+  nh->get_parameter("minRelZ", minRelZ);
+  nh->get_parameter("maxRelZ", maxRelZ);
+  nh->get_parameter("collisionPointThre", collisionPointThre);
   nh->get_parameter("vehicleLX", vehicleLX);
   nh->get_parameter("vehicleLY", vehicleLY);
   nh->get_parameter("sensorOffsetX", sensorOffsetX);
@@ -245,14 +273,15 @@ int main(int argc, char** argv)
 
   auto subJoystick = nh->create_subscription<sensor_msgs::msg::Joy>("/joy", 5, joystickHandler);
 
+  //Choose between terrain map and registered scan. If using terrain map, set minRelZ/maxRelZ to small/large values. If using registered scan, set obstacleHeightThre to -1.0. Then, adjust collisionPointThre accordingly.
   auto subTerrainCloud = nh->create_subscription<sensor_msgs::msg::PointCloud2>("/terrain_map", 5, terrainCloudHandler);
+  //auto subTerrainCloud = nh->create_subscription<sensor_msgs::msg::PointCloud2>("/registered_scan", 5, terrainCloudHandler);
 
   pubJoystick = nh->create_publisher<sensor_msgs::msg::Joy>("/joy", 5);
 
   pubWaypoint = nh->create_publisher<geometry_msgs::msg::PointStamped>("/way_point", 5);
 
-  auto pubMoveComplete = nh->create_publisher<std_msgs::msg::Bool>("/movement_complete", 5);
-  std_msgs::msg::Bool moveComplete;
+  pubMoveComplete = nh->create_publisher<std_msgs::msg::Bool>("/movement_complete", 5);
 
   vehicleLSmallX = vehicleLX / 2;
   vehicleLLargeX = vehicleLSmallX + stopMargin;
@@ -260,19 +289,19 @@ int main(int argc, char** argv)
   vehicleLLargeY = vehicleLSmallY + stopMargin;
   vehicleRLarge = sqrt(vehicleLLargeX * vehicleLLargeX + vehicleLLargeY * vehicleLLargeY);
 
-  rclcpp::Rate rate(20);
+  rclcpp::Rate rate(50);
   bool status = rclcpp::ok();
   while (status) {
     rclcpp::spin_some(nh);
 
     if (moveState == 1) {
       float deltaX = cos(vehicleYaw) * (goalX - vehicleX) + sin(vehicleYaw) * (goalY - vehicleY);
-      if (deltaX < 0 && backStop > 20) deltaX = 0;
-      else if (deltaX > 0 && frontStop > 20) deltaX = 0;
+      if (deltaX < 0 && backStop > collisionPointThre) deltaX = 0;
+      else if (deltaX > 0 && frontStop > collisionPointThre) deltaX = 0;
 
       float deltaY = -sin(vehicleYaw) * (goalX - vehicleX) + cos(vehicleYaw) * (goalY - vehicleY);
-      if (deltaY < 0 && rightStop > 20) deltaY = 0;
-      else if (deltaY > 0 && leftStop > 20) deltaY = 0;
+      if (deltaY < 0 && rightStop > collisionPointThre) deltaY = 0;
+      else if (deltaY > 0 && leftStop > collisionPointThre) deltaY = 0;
 
       float deltaXY = sqrt(deltaX * deltaX + deltaY * deltaY);
       if (deltaXY < 0.001) deltaXY = 0.001;
@@ -280,8 +309,8 @@ int main(int argc, char** argv)
       float deltaYaw = goalYaw - vehicleYaw;
       if (deltaYaw > PI) deltaYaw -= 2 * PI;
       else if (deltaYaw < -PI) deltaYaw += 2 * PI;
-      if (deltaYaw < 0 && cwStop > 20) deltaYaw = 0;
-      else if (deltaYaw > 0 && ccwStop > 20) deltaYaw = 0;
+      if (deltaYaw < 0 && cwStop > collisionPointThre) deltaYaw = 0;
+      else if (deltaYaw > 0 && ccwStop > collisionPointThre) deltaYaw = 0;
 
       float joyFwd = speed * deltaX / deltaXY;
       float joyLeft = 2.0 * speed * deltaY / deltaXY;
@@ -301,21 +330,8 @@ int main(int argc, char** argv)
       } else {
         pubWaypointMsg();
         pubJoyMsg(0, 0, 0, 1.0);
+        pubMoveCompleteMsg();
         moveState = 0;
-
-        float deltaX = goalX - vehicleX;
-        float deltaY = goalY - vehicleY;
-        float deltaXY = sqrt(deltaX * deltaX + deltaY * deltaY);
-
-        float deltaYaw = goalYaw - vehicleYaw;
-        if (deltaYaw > PI) deltaYaw -= 2 * PI;
-        else if (deltaYaw < -PI) deltaYaw += 2 * PI;
-
-        if (deltaXY > stopDis || fabs(deltaYaw) > stopAngle) moveComplete.data = false;
-        else moveComplete.data = true;
-        pubMoveComplete->publish(moveComplete);
-
-        RCLCPP_INFO(nh->get_logger(), "Local movement completed.");
       }
     }
 
