@@ -8,6 +8,7 @@
     <param name="stopDis" value="0.02" />
     <param name="stopAngle" value="0.04" />
     <param name="collisionStop" value="true" />
+    <param name="terrainCloudTopic" value="/terrain_map" /> <!--Choose between '/terrain_map' and '/registered_scan'. If using '/terrain_map', set 'minRelZ'/'maxRelZ' to small/large values. If using '/registered_scan', set 'obstacleHeightThre' to -1.0. Then, adjust 'collisionPointThre' accordingly.-->
     <param name="obstacleHeightThre" value="0.05" />
     <param name="minRelZ" value="-10.0" />
     <param name="maxRelZ" value="10.0" />

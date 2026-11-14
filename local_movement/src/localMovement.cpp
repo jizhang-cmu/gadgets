@@ -33,6 +33,7 @@ double slowAngle = 0.2;
 double stopDis = 0.02;
 double stopAngle = 0.04;
 bool collisionStop = true;
+string terrainCloudTopic = "/terrain_map";
 double obstacleHeightThre = 0.05;
 double minRelZ = -0.4;
 double maxRelZ = 0.3;
@@ -238,6 +239,7 @@ int main(int argc, char** argv)
   nh->declare_parameter<double>("stopDis", stopDis);
   nh->declare_parameter<double>("stopAngle", stopAngle);
   nh->declare_parameter<bool>("collisionStop", collisionStop);
+  nh->declare_parameter<string>("terrainCloudTopic", terrainCloudTopic);
   nh->declare_parameter<double>("obstacleHeightThre", obstacleHeightThre);
   nh->declare_parameter<double>("minRelZ", minRelZ);
   nh->declare_parameter<double>("maxRelZ", maxRelZ);
@@ -256,6 +258,7 @@ int main(int argc, char** argv)
   nh->get_parameter("stopDis", stopDis);
   nh->get_parameter("stopAngle", stopAngle);
   nh->get_parameter("collisionStop", collisionStop);
+  nh->get_parameter("terrainCloudTopic", terrainCloudTopic);
   nh->get_parameter("obstacleHeightThre", obstacleHeightThre);
   nh->get_parameter("minRelZ", minRelZ);
   nh->get_parameter("maxRelZ", maxRelZ);
@@ -273,9 +276,7 @@ int main(int argc, char** argv)
 
   auto subJoystick = nh->create_subscription<sensor_msgs::msg::Joy>("/joy", 5, joystickHandler);
 
-  //Choose between terrain map and registered scan. If using terrain map, set minRelZ/maxRelZ to small/large values. If using registered scan, set obstacleHeightThre to -1.0. Then, adjust collisionPointThre accordingly.
-  auto subTerrainCloud = nh->create_subscription<sensor_msgs::msg::PointCloud2>("/terrain_map", 5, terrainCloudHandler);
-  //auto subTerrainCloud = nh->create_subscription<sensor_msgs::msg::PointCloud2>("/registered_scan", 5, terrainCloudHandler);
+  auto subTerrainCloud = nh->create_subscription<sensor_msgs::msg::PointCloud2>(terrainCloudTopic, 5, terrainCloudHandler);
 
   pubJoystick = nh->create_publisher<sensor_msgs::msg::Joy>("/joy", 5);
 
