@@ -13,7 +13,7 @@ In a third terminal, send a 'geometry_msgs::msg::Pose2D' typed message on '/loca
 ros2 topic pub --once /local_movement geometry_msgs/msg/Pose2D '{x: 0.5, y: 0.1, theta: 0.2}'
 ```
 
-This node operates the vehicle in manual mode. When the local movement completes, the nodes switches the system to waypoint mode. Anytime during the local movement, to abort and switch the system to waypoint mode, click the 'Resume Navigation to Goal' button in RVIZ, or hold the 'waypoint-mode' button on the controller and use the right joystick to set the speed. Alternatively, users can write code to send a 'ensor_msgs::msg::Joy' typed message on '/joy' topic for mode switch. Example code in C++ is below.
+This node operates the vehicle in manual mode. When the local movement completes, the system is left in manual mode. To switch to waypoint mode, click the 'Resume Navigation to Goal' button in RVIZ, or hold the 'waypoint-mode' button on the controller and use the right joystick to set the speed. Alternatively, users can write code to send a 'ensor_msgs::msg::Joy' typed message on '/joy' topic for mode switch. Example code in C++ is below.
 
 ```
 //Define joy publisher at initialization
