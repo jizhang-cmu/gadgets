@@ -168,8 +168,21 @@ void moveHandler(const geometry_msgs::msg::Pose::ConstSharedPtr move)
 void joystickHandler(const sensor_msgs::msg::Joy::ConstSharedPtr joy)
 {
   if (joy->header.frame_id != "local_movement" && moveState == 1) {
-    pubWaypointMsg();
-    pubJoyMsg(0, 0, 0, 1.0);
+    pubJoyMsg(joy->axes[0], joy->axes[3], joy->axes[4], joy->axes[2]);
+    pubMoveCompleteMsg();
+    moveState = 0;
+  }
+}
+
+void moveTakeoverHandler(const std_msgs::msg::Bool::ConstSharedPtr moveTakeover)
+{
+  if (moveTakeover->data) {
+    if (moveState == 1) pubJoyMsg(0, 0, 0, 1.0);
+  } else {
+    pubJoyMsg(1.0, 0, 0, -1.0);
+  }
+
+  if (moveState == 1) {
     pubMoveCompleteMsg();
     moveState = 0;
   }
@@ -279,6 +292,8 @@ int main(int argc, char** argv)
 
   auto subJoystick = nh->create_subscription<sensor_msgs::msg::Joy>("/joy", 5, joystickHandler);
 
+  auto subMoveTakeover = nh->create_subscription<std_msgs::msg::Bool>("/movement_takeover", 5, moveTakeoverHandler);
+
   auto subTerrainCloud = nh->create_subscription<sensor_msgs::msg::PointCloud2>(terrainCloudTopic, 5, terrainCloudHandler);
 
   pubJoystick = nh->create_publisher<sensor_msgs::msg::Joy>("/joy", 5);
@@ -332,7 +347,7 @@ int main(int argc, char** argv)
       if (deltaXY > stopDis || fabs(deltaYaw) > stopAngle) {
         pubJoyMsg(joyFwd, joyLeft, joyYaw, 1.0);
       } else {
-        pubWaypointMsg();
+        //pubWaypointMsg();
         pubJoyMsg(0, 0, 0, 1.0);
         pubMoveCompleteMsg();
         moveState = 0;
