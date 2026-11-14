@@ -8,7 +8,7 @@ In a terminal, launch the system on the vehicle NUC computer. In a second termin
 ros2 launch local_movement local_movement.launch
 ```
 
-In a third terminal, send a 'geometry_msgs::msg::Pose' typed message on '/local_movement' topic to move the vehicle around locally. The movement is defined in vehicle frame. Use 'collisionStop' in the launch file to turn on and off collision stopping. During the local movement, touching any button on the joystick controller stops the vehicle. Here, only translation around x, y and rotation around z are effective.
+In a third terminal, send a 'geometry_msgs::msg::Pose' typed message on '/local_movement' topic to move the vehicle around locally. The movement is defined in vehicle frame by default. Set 'globalRef = true' in the launch file to use global reference. Use 'collisionStop' in the launch file to turn on and off collision stopping. During the local movement, touching any button on the joystick controller stops the vehicle (note that this leaves the system in manual mode). Here, only translation around x, y and rotation around z are effective.
 ```
 ros2 topic pub --once /local_movement geometry_msgs/msg/Pose 
 'position:                                                                
@@ -22,7 +22,7 @@ orientation:
   w: 1.0'
 ```
 
-This node operates the vehicle in manual mode. Before the next waypoint following, the system needs to switch back to waypoint mode. Click the 'Resume Navigation to Goal' button in RVIZ, or hold the 'waypoint-mode' button on the controller and use the right joystick to set the speed. Alternatively, users can write code to send a 'ensor_msgs::msg::Joy' typed message on '/joy' topic for mode switch. Example code in C++ is below.
+This node operates the vehicle in manual mode. When the local movement completes, the nodes switches the system to waypoint mode. Anytime during the local movement, to abort and switch the system to waypoint mode, click the 'Resume Navigation to Goal' button in RVIZ, or hold the 'waypoint-mode' button on the controller and use the right joystick to set the speed. Alternatively, users can write code to send a 'ensor_msgs::msg::Joy' typed message on '/joy' topic for mode switch. Example code in C++ is below.
 
 ```
 //Define joy publisher at initialization
