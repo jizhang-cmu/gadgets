@@ -10,6 +10,7 @@
 #include "sensor_msgs/msg/point_cloud2.hpp"
 #include <sensor_msgs/msg/joy.hpp>
 #include <geometry_msgs/msg/point_stamped.hpp>
+#include <std_msgs/msg/bool.hpp>
 
 #include "tf2_ros/transform_broadcaster.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
@@ -253,6 +254,9 @@ int main(int argc, char** argv)
 
   pubWaypoint = nh->create_publisher<geometry_msgs::msg::PointStamped>("/way_point", 5);
 
+  auto pubMoveComplete = nh->create_publisher<std_msgs::msg::Bool>("/movement_complete", 5);
+  std_msgs::msg::Bool moveComplete;
+
   vehicleLSmallX = vehicleLX / 2;
   vehicleLLargeX = vehicleLSmallX + stopMargin;
   vehicleLSmallY = vehicleLY / 2;
@@ -301,6 +305,18 @@ int main(int argc, char** argv)
         pubWaypointMsg();
         pubJoyMsg(0, 0, 0, 1.0);
         moveState = 0;
+
+        float deltaX = goalX - vehicleX;
+        float deltaY = goalY - vehicleY;
+        float deltaXY = sqrt(deltaX * deltaX + deltaY * deltaY);
+
+        float deltaYaw = goalYaw - vehicleYaw;
+        if (deltaYaw > PI) deltaYaw -= 2 * PI;
+        else if (deltaYaw < -PI) deltaYaw += 2 * PI;
+
+        if (deltaXY > stopDis || fabs(deltaYaw) > stopAngle) moveComplete.data = false;
+        else moveComplete.data = true;
+        pubMoveComplete->publish(moveComplete);
 
         RCLCPP_INFO(nh->get_logger(), "Local movement completed.");
       }
