@@ -35,7 +35,10 @@ bool collisionStop = true;
 double obstacleHeightThre = 0.05;
 double vehicleLX = 0.5;
 double vehicleLY = 0.5;
+double sensorOffsetX = 0;
+double sensorOffsetY = 0;
 double stopMargin = 0.1;
+bool globalRef = false;
 
 pcl::PointCloud<pcl::PointXYZI>::Ptr terrainCloud(new pcl::PointCloud<pcl::PointXYZI>());
 
@@ -110,19 +113,25 @@ void odomHandler(const nav_msgs::msg::Odometry::ConstSharedPtr odomIn)
   tf2::Matrix3x3(tf2::Quaternion(geoQuat.x, geoQuat.y, geoQuat.z, geoQuat.w)).getRPY(roll, pitch, yaw);
 
   vehicleYaw = yaw;
-  vehicleX = odomIn->pose.pose.position.x;
-  vehicleY = odomIn->pose.pose.position.y;
+  vehicleX = odomIn->pose.pose.position.x - cos(yaw) * sensorOffsetX + sin(yaw) * sensorOffsetY;
+  vehicleY = odomIn->pose.pose.position.y - sin(yaw) * sensorOffsetX - cos(yaw) * sensorOffsetY;
   vehicleZ = odomIn->pose.pose.position.z;
 }
 
 void moveHandler(const geometry_msgs::msg::Pose2D::ConstSharedPtr move)
 {
-  goalX = vehicleX + cos(vehicleYaw) * move->x - sin(vehicleYaw) * move->y;
-  goalY = vehicleY + sin(vehicleYaw) * move->x + cos(vehicleYaw) * move->y;
+  if (globalRef) {
+    goalX = move->x;
+    goalY = move->y;
+    goalYaw = move->theta;
+  } else {
+    goalX = vehicleX + cos(vehicleYaw) * move->x - sin(vehicleYaw) * move->y;
+    goalY = vehicleY + sin(vehicleYaw) * move->x + cos(vehicleYaw) * move->y;
 
-  goalYaw = vehicleYaw + move->theta;
-  if (goalYaw > PI) goalYaw -= 2 * PI;
-  else if (goalYaw < -PI) goalYaw += 2 * PI;
+    goalYaw = vehicleYaw + move->theta;
+    if (goalYaw > PI) goalYaw -= 2 * PI;
+    else if (goalYaw < -PI) goalYaw += 2 * PI;
+  }
 
   moveState = 1;
 
@@ -133,7 +142,7 @@ void joystickHandler(const sensor_msgs::msg::Joy::ConstSharedPtr joy)
 {
   if (joy->header.frame_id != "local_movement" && moveState == 1) {
     pubWaypointMsg();
-    pubJoyMsg(0, 0, 0, 1.0);
+    pubJoyMsg(1.0, 0, 0, -1.0);
     moveState = 0;
 
     RCLCPP_INFO(nh->get_logger(), "Local movement interrupted.");
@@ -209,7 +218,10 @@ int main(int argc, char** argv)
   nh->declare_parameter<double>("obstacleHeightThre", obstacleHeightThre);
   nh->declare_parameter<double>("vehicleLX", vehicleLX);
   nh->declare_parameter<double>("vehicleLY", vehicleLY);
+  nh->declare_parameter<double>("sensorOffsetX", sensorOffsetX);
+  nh->declare_parameter<double>("sensorOffsetY", sensorOffsetY);
   nh->declare_parameter<double>("stopMargin", stopMargin);
+  nh->declare_parameter<bool>("globalRef", globalRef);
 
   nh->get_parameter("speed", speed);
   nh->get_parameter("yawRate", yawRate);
@@ -221,7 +233,10 @@ int main(int argc, char** argv)
   nh->get_parameter("obstacleHeightThre", obstacleHeightThre);
   nh->get_parameter("vehicleLX", vehicleLX);
   nh->get_parameter("vehicleLY", vehicleLY);
+  nh->get_parameter("sensorOffsetX", sensorOffsetX);
+  nh->get_parameter("sensorOffsetY", sensorOffsetY);
   nh->get_parameter("stopMargin", stopMargin);
+  nh->get_parameter("globalRef", globalRef);
 
   auto subOdom = nh->create_subscription<nav_msgs::msg::Odometry>("/state_estimation", 5, odomHandler);
 
@@ -281,7 +296,7 @@ int main(int argc, char** argv)
         pubJoyMsg(joyFwd, joyLeft, joyYaw, 1.0);
       } else {
         pubWaypointMsg();
-        pubJoyMsg(0, 0, 0, 1.0);
+        pubJoyMsg(1.0, 0, 0, -1.0);
         moveState = 0;
 
         RCLCPP_INFO(nh->get_logger(), "Local movement completed.");
