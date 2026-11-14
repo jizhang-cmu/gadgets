@@ -145,7 +145,7 @@ void joystickHandler(const sensor_msgs::msg::Joy::ConstSharedPtr joy)
 {
   if (joy->header.frame_id != "local_movement" && moveState == 1) {
     pubWaypointMsg();
-    pubJoyMsg(1.0, 0, 0, -1.0);
+    pubJoyMsg(0, 0, 0, 1.0);
     moveState = 0;
 
     RCLCPP_INFO(nh->get_logger(), "Local movement interrupted.");
@@ -299,7 +299,7 @@ int main(int argc, char** argv)
         pubJoyMsg(joyFwd, joyLeft, joyYaw, 1.0);
       } else {
         pubWaypointMsg();
-        pubJoyMsg(1.0, 0, 0, -1.0);
+        pubJoyMsg(0, 0, 0, 1.0);
         moveState = 0;
 
         RCLCPP_INFO(nh->get_logger(), "Local movement completed.");
