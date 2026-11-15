@@ -168,7 +168,7 @@ void moveHandler(const geometry_msgs::msg::Pose::ConstSharedPtr move)
 void joystickHandler(const sensor_msgs::msg::Joy::ConstSharedPtr joy)
 {
   if (joy->header.frame_id != "local_movement" && moveState == 1) {
-    pubJoyMsg(joy->axes[0], joy->axes[3], joy->axes[4], joy->axes[2]);
+    pubJoyMsg(joy->axes[4], joy->axes[3], joy->axes[0], joy->axes[2]);
     pubMoveCompleteMsg();
     moveState = 0;
   }
